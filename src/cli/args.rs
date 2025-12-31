@@ -28,15 +28,15 @@ pub enum Commands {
     /// Resume the first Codex session whose first JSONL line has `.payload.git.branch == branch`.
     ///
     /// Usage:
-    ///     amg resume-branch BRANCH
+    ///     amg resume BRANCH
     ///
     /// Required environment variables:
     ///     CODEX_REPO=/path/to/repo
     ///
     /// Optional environment variables:
     ///     CODEX_CODEXDIR=/path/to/.codex   (defaults to $HOME/.codex)
+    #[command(name = "resume")]
     #[command(visible_alias = "rb")]
-    #[command(visible_alias = "resume")]
     ResumeBranch {
         /// Git branch to resume (matches `.payload.git.branch` in the first JSONL line).
         branch: String,
@@ -93,9 +93,8 @@ mod tests {
     }
 
     #[rstest]
-    #[case("resume-branch")]
-    #[case("rb")]
     #[case("resume")]
+    #[case("rb")]
     fn test_subcommand_aliases(#[case] subcommand: &str) {
         let args = parse_args_from(["amg", subcommand, "test-branch", "--repo", "/tmp/repo"]);
         match args.command {
@@ -111,7 +110,7 @@ mod tests {
     #[case("dev")]
     #[case("test/branch")]
     fn test_branch_names(#[case] branch_name: &str) {
-        let args = parse_args_from(["amg", "resume-branch", branch_name, "--repo", "/tmp/repo"]);
+        let args = parse_args_from(["amg", "resume", branch_name, "--repo", "/tmp/repo"]);
         match args.command {
             Commands::ResumeBranch { branch, .. } => {
                 assert_eq!(branch, branch_name);
@@ -124,7 +123,7 @@ mod tests {
     #[case("/home/user/project")]
     #[case("/var/tmp/test-repo")]
     fn test_repo_paths(#[case] repo_path: &str) {
-        let args = parse_args_from(["amg", "resume-branch", "main", "--repo", repo_path]);
+        let args = parse_args_from(["amg", "resume", "main", "--repo", repo_path]);
         match args.command {
             Commands::ResumeBranch { repo, .. } => {
                 assert_eq!(repo, PathBuf::from(repo_path));
@@ -137,7 +136,7 @@ mod tests {
     #[case(Some("/tmp/.codex"))]
     #[case(Some("/home/user/.codex"))]
     fn test_codexdir_option(#[case] codexdir: Option<&str>) {
-        let mut cmd_args = vec!["amg", "resume-branch", "main", "--repo", "/tmp/repo"];
+        let mut cmd_args = vec!["amg", "resume", "main", "--repo", "/tmp/repo"];
         if let Some(dir) = codexdir {
             cmd_args.push("--codexdir");
             cmd_args.push(dir);
@@ -163,7 +162,7 @@ mod tests {
         #[case] expected_dry_run: bool,
         #[case] expected_no_tmux: bool,
     ) {
-        let args = parse_args_from(["amg", "resume-branch", "main", "--repo", "/tmp/repo", flag]);
+        let args = parse_args_from(["amg", "resume", "main", "--repo", "/tmp/repo", flag]);
         match args.command {
             Commands::ResumeBranch {
                 dry_run, no_tmux, ..
@@ -175,10 +174,10 @@ mod tests {
     }
 
     #[rstest]
-    #[case("resume-branch", "main", "/tmp/repo", None, false, false)]
+    #[case("resume", "main", "/tmp/repo", None, false, false)]
     #[case("rb", "feature", "/home/repo", Some("/tmp/.codex"), true, false)]
     #[case("resume", "dev", "/var/repo", None, false, true)]
-    #[case("resume-branch", "test", "/tmp/repo", Some("/home/.codex"), true, true)]
+    #[case("resume", "test", "/tmp/repo", Some("/home/.codex"), true, true)]
     fn test_all_options_combinations(
         #[case] subcommand: &str,
         #[case] branch: &str,

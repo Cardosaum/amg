@@ -10,12 +10,12 @@ use clap::{Arg, Command, CommandFactory};
 mod helpers {
     use super::*;
 
-    /// Get the resume-branch subcommand from the main command.
+    /// Get the resume subcommand from the main command.
     pub fn get_resume_branch_cmd() -> Command {
         Args::command()
             .get_subcommands()
-            .find(|sub| sub.get_name() == "resume-branch")
-            .expect("Should have 'resume-branch' subcommand")
+            .find(|sub| sub.get_name() == "resume")
+            .expect("Should have 'resume' subcommand")
             .clone()
     }
 
@@ -73,7 +73,7 @@ mod helpers {
 
 mod constants {
     // Subcommand names
-    pub const RESUME_BRANCH: &str = "resume-branch";
+    pub const RESUME_BRANCH: &str = "resume";
 
     // Argument IDs
     pub const ARG_BRANCH: &str = "branch";
@@ -104,7 +104,6 @@ mod constants {
 
     // Aliases
     pub const ALIAS_RB: &str = "rb";
-    pub const ALIAS_RESUME: &str = "resume";
 }
 
 use constants::*;
@@ -131,9 +130,9 @@ mod subcommands {
     fn resume_branch_has_help_text() {
         let cmd = get_resume_branch_cmd();
         let about = cmd.get_about();
-        let about_text = assert_help_text_exists(about, "resume-branch subcommand");
-        assert_help_text_contains(&about_text, ABOUT_RESUME_BRANCH, "resume-branch");
-        assert_help_text_contains(&about_text, ABOUT_PAYLOAD_BRANCH, "resume-branch");
+        let about_text = assert_help_text_exists(about, "resume subcommand");
+        assert_help_text_contains(&about_text, ABOUT_RESUME_BRANCH, "resume");
+        assert_help_text_contains(&about_text, ABOUT_PAYLOAD_BRANCH, "resume");
     }
 
     #[test]
@@ -142,11 +141,12 @@ mod subcommands {
         let aliases: Vec<_> = cmd.get_visible_aliases().collect();
         assert!(
             aliases.contains(&ALIAS_RB),
-            "resume-branch should have '{ALIAS_RB}' alias"
+            "resume should have '{ALIAS_RB}' alias"
         );
-        assert!(
-            aliases.contains(&ALIAS_RESUME),
-            "resume-branch should have '{ALIAS_RESUME}' alias"
+        assert_eq!(
+            aliases.len(),
+            1,
+            "resume should have exactly one alias '{ALIAS_RB}'"
         );
     }
 }
@@ -266,33 +266,33 @@ mod help_output {
         let output = run_help_command(&[RESUME_BRANCH]);
         assert!(
             output.contains(ABOUT_RESUME_BRANCH),
-            "resume-branch help output should contain description '{}'. Got output:\n{}",
+            "resume help output should contain description '{}'. Got output:\n{}",
             ABOUT_RESUME_BRANCH,
             output
         );
         assert!(
             output.contains("--repo") || output.contains("-r"),
-            "resume-branch help output should mention repo flag. Got output:\n{}",
+            "resume help output should mention repo flag. Got output:\n{}",
             output
         );
         assert!(
             output.contains("--codexdir"),
-            "resume-branch help output should mention codexdir flag. Got output:\n{}",
+            "resume help output should mention codexdir flag. Got output:\n{}",
             output
         );
         assert!(
             output.contains("--dry-run") || output.contains("-n"),
-            "resume-branch help output should mention dry-run flag. Got output:\n{}",
+            "resume help output should mention dry-run flag. Got output:\n{}",
             output
         );
         assert!(
             output.contains("--no-tmux"),
-            "resume-branch help output should mention no-tmux flag. Got output:\n{}",
+            "resume help output should mention no-tmux flag. Got output:\n{}",
             output
         );
         assert!(
             output.contains("USAGE:") || output.contains("Usage:"),
-            "resume-branch help output should contain usage section. Got output:\n{}",
+            "resume help output should contain usage section. Got output:\n{}",
             output
         );
     }
