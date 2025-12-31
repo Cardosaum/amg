@@ -1,3 +1,9 @@
+//! Common imports and re-exports.
+//!
+//! This module provides a prelude of commonly used types and functions for convenient
+//! access across CLI modules. It centralizes imports to reduce repetition and ensure
+//! consistency.
+
 // Re-export commonly used types and functions for convenient access across modules.
 // All items here are used by modules that import from this prelude.
 
