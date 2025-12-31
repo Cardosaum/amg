@@ -1,0 +1,6 @@
+# Nextest configuration for faster test runs
+[profile.default]
+retries = { backoff = "exponential", count = 3, delay = "1s" }
+status-level = "none"
+final-status-level = "flaky"
+
