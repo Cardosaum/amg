@@ -41,9 +41,7 @@ fn run_resume_branch(
     dry_run: bool,
     no_tmux: bool,
 ) -> Result<ExitCode> {
-    let codexdir = codexdir
-        .map(Ok)
-        .unwrap_or_else(util::default_codexdir)?;
+    let codexdir = codexdir.map(Ok).unwrap_or_else(util::default_codexdir)?;
 
     util::require_dir(&repo, "repo (CODEX_REPO)")?;
     util::require_dir(&codexdir, "codexdir (CODEX_CODEXDIR)")?;
@@ -57,8 +55,7 @@ fn run_resume_branch(
     })?;
     util::require_dir(&session.cwd, "session cwd")?;
 
-    let cmd =
-        codex_cmd::build_codex_cmd(&repo, &codexdir, &session, util::home_dir().as_deref());
+    let cmd = codex_cmd::build_codex_cmd(&repo, &codexdir, &session, util::home_dir().as_deref());
 
     info!(
         id = %session.id,
