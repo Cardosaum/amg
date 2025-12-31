@@ -140,8 +140,8 @@ fn run_resume_branch(
 ) -> Result<ExitCode> {
     let codexdir = codexdir.map(Ok).unwrap_or_else(util::default_codexdir)?;
 
-    util::require_dir(&repo, "repo (CODEX_REPO)")?;
-    util::require_dir(&codexdir, "codexdir (CODEX_CODEXDIR)")?;
+    util::require_dir(&repo, "repo", Some("CODEX_REPO"))?;
+    util::require_dir(&codexdir, "codexdir", Some("CODEX_CODEXDIR"))?;
 
     let session = scan::find_first_session(&codexdir, &branch)?.with_context(|| {
         format!(
@@ -150,7 +150,7 @@ fn run_resume_branch(
             codexdir.display()
         )
     })?;
-    util::require_dir(&session.cwd, "session cwd")?;
+    util::require_dir(&session.cwd, "session cwd", None)?;
 
     let cmd = codex_cmd::build_codex_cmd(&repo, &codexdir, &session, util::home_dir().as_deref());
 
