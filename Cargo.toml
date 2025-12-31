@@ -30,3 +30,6 @@ dead_code = "deny"
 
 [lints.clippy]
 all = "deny"
+
+[dev-dependencies]
+rstest = "0.26.1"
