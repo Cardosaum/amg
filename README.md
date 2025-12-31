@@ -247,7 +247,7 @@ release-plz release
 
 For local development, you can use [Bitwarden CLI](https://bitwarden.com/help/cli/) to securely manage tokens required by release-plz.
 
-> Note: This repository intentionally does **not** integrate Bitwarden into GitHub Actions. CI releases use GitHub-native auth (the workflow `GITHUB_TOKEN` plus crates.io trusted publishing via OIDC).
+> Note: This repository intentionally does **not** integrate Bitwarden into GitHub Actions. CI releases use GitHub-native auth (the workflow `GITHUB_TOKEN` plus token-based authentication for crates.io publishing).
 
 #### Quick Start
 

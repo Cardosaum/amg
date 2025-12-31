@@ -2,7 +2,7 @@
 
 This guide explains how to set up Bitwarden CLI to securely manage tokens required by release-plz for local development.
 
-> Note: This repository intentionally does **not** integrate Bitwarden into GitHub Actions. CI releases use GitHub-native auth (the workflow `GITHUB_TOKEN` plus crates.io trusted publishing via OIDC).
+> Note: This repository intentionally does **not** integrate Bitwarden into GitHub Actions. CI releases use GitHub-native auth (the workflow `GITHUB_TOKEN` plus token-based authentication for crates.io publishing).
 
 ## Overview
 
@@ -87,9 +87,9 @@ You need to create items in your Bitwarden vault to store tokens.
 
 #### Cargo Registry Token Item (Optional)
 
-Only needed if you're not using trusted publishing on crates.io **or** you want to run `release-plz release` locally.
+Only needed if you want to run `release-plz release` locally.
 
-If you publish from GitHub Actions using crates.io trusted publishing (OIDC), you typically do **not** need a crates.io token in CI.
+CI uses a `CARGO_REGISTRY_TOKEN` secret for publishing to crates.io.
 
 1. Create a new item:
    - **Name**: `amg-release-cargo-token` (or customize with `BW_CARGO_TOKEN_ITEM`)
@@ -230,7 +230,7 @@ export BW_CLIENTSECRET=your-client-secret
 ```
 
 **Note**: Store API keys securely (never in the repository).
-This repository does not use Bitwarden in CI; prefer GitHub-native secrets/OIDC for GitHub Actions.
+This repository does not use Bitwarden in CI; prefer GitHub-native secrets for GitHub Actions.
 
 ### Integration with Shell Config
 

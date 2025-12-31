@@ -1,122 +1,83 @@
 name: Release-plz
 
-# Automatic Release Flow:
-# 1. Push to main → release-plz-pr job creates/updates a release PR
-# 2. Merge the release PR → release-plz automatically creates a tag (amg-v*)
-# 3. Tag push → release-plz-release job publishes to crates.io and creates GitHub release
-# 4. After release → build-release-binaries job builds and uploads binaries for cargo-binstall
-#
-# This workflow ensures fully automatic publishing:
-# - Crates are published to crates.io automatically
-# - Binaries are built and uploaded to GitHub Releases automatically
-# - Users can install via: cargo binstall amg
-
 on:
   push:
-    branches:
-      - main
-      - master
-    tags:
-      - "amg-v*"
+    branches: [main, master]
+    tags: ["amg-v*"]
+  workflow_dispatch:
 
 env:
   CARGO_TERM_COLOR: always
 
-# Security: Use job-level permissions (least privilege). See each job's
-# `permissions:` block. This workflow intentionally uses GitHub-native auth
-# (GITHUB_TOKEN + crates.io trusted publishing via OIDC).
-#
-# IMPORTANT: If this workflow fails with "GitHub Actions is not permitted to
-# create or approve pull requests" (403 error), verify repository settings:
-# - Go to Settings → Actions → General → Workflow permissions
-# - Ensure "Read and write permissions" is selected (not "Read repository
-#   contents and packages permissions")
-# - Or ensure "Allow GitHub Actions to create and approve pull requests" is enabled
-# - If repository settings cannot be changed, use a Personal Access Token (PAT)
-#   with 'repo' scope stored as RELEASE_PLZ_TOKEN secret instead of GITHUB_TOKEN
+concurrency:
+  group: release-plz-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
-  # Release unpublished packages.
-  # Runs on pushes to main/master; publishes via crates.io OIDC and creates the `amg-v*` tag + GitHub release.
-  # The tag push triggers the build-release-binaries job below.
   release-plz-release:
     name: Release-plz release
     runs-on: ubuntu-latest
-    # Only run for main/master pushes on the repository owner (avoid running on tag pushes).
+    timeout-minutes: 30
     if: github.repository_owner == 'Cardosaum' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
     permissions:
       contents: write
-      id-token: write  # Required for trusted publishing (OIDC)
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
         with:
           fetch-depth: 0
-          persist-credentials: false
 
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@4be9e76fd7c4901c61fb841f559994984270fce7 # stable
+      - uses: dtolnay/rust-toolchain@4be9e76fd7c4901c61fb841f559994984270fce7
 
-      - name: Run release-plz
-        uses: release-plz/action@487eb7b5c085a664d5c5ca05f4159bd9b591182a # v0.5
+      - uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5
+        with:
+          workspaces: "."
+
+      - uses: release-plz/action@487eb7b5c085a664d5c5ca05f4159bd9b591182a
         with:
           command: release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Not needed when using crates.io trusted publishing (OIDC).
-          # CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
 
-  # Create a PR with the new versions and changelog, preparing the next release.
-  # This job runs on every push to main and creates/updates a release PR
-  # When the release PR is merged, the next push to main/master triggers `release-plz-release`,
-  # which creates the tag (amg-v*). The tag push triggers the build-release-binaries job below.
   release-plz-pr:
     name: Release-plz PR
     runs-on: ubuntu-latest
-    # Only run for main/master pushes on the repository owner (avoid running on tag pushes).
+    timeout-minutes: 15
     if: github.repository_owner == 'Cardosaum' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
-    # Explicit permissions required for creating pull requests.
-    # Use job-level permissions (least privilege).
     permissions:
       contents: write
       pull-requests: write
     concurrency:
-      group: release-plz-${{ github.ref }}
+      group: release-plz-pr-${{ github.ref }}
       cancel-in-progress: false
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
         with:
           fetch-depth: 0
-          persist-credentials: false
 
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@4be9e76fd7c4901c61fb841f559994984270fce7 # stable
+      - uses: dtolnay/rust-toolchain@4be9e76fd7c4901c61fb841f559994984270fce7
 
-      - name: Run release-plz
-        uses: release-plz/action@487eb7b5c085a664d5c5ca05f4159bd9b591182a # v0.5
+      - uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5
+        with:
+          workspaces: "."
+
+      - uses: release-plz/action@487eb7b5c085a664d5c5ca05f4159bd9b591182a
         with:
           command: release-pr
         env:
-          # GITHUB_TOKEN is automatically provided by GitHub Actions.
-          # If repository settings restrict Actions from creating PRs, use a PAT
-          # stored as RELEASE_PLZ_TOKEN secret instead: GITHUB_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # CARGO_REGISTRY_TOKEN is needed for release-pr to check published versions
-          # CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
 
-  # Build and upload binaries to GitHub Releases for cargo-binstall
-  # This job automatically runs after release-plz-release creates a GitHub release
-  # Binaries are built for multiple platforms and uploaded as release assets
   build-release-binaries:
     name: Build Release Binaries
     runs-on: ${{ matrix.os }}
     needs: release-plz-release
-    # Only run for tags matching amg-v* pattern (releases)
-    # Automatically triggered when release-plz creates a tag after merging release PR
+    timeout-minutes: 45
     if: startsWith(github.ref, 'refs/tags/amg-v') && github.repository_owner == 'Cardosaum'
     permissions:
       contents: write
+    env:
+      TARGET: ${{ matrix.target }}
+      BINARY: ${{ matrix.binary-name }}
     strategy:
       fail-fast: false
       matrix:
@@ -124,68 +85,70 @@ jobs:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             binary-name: amg
-            archive-format: tar.gz
           - os: macos-latest
             target: x86_64-apple-darwin
             binary-name: amg
-            archive-format: tar.gz
           - os: macos-latest
             target: aarch64-apple-darwin
             binary-name: amg
-            archive-format: tar.gz
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             binary-name: amg.exe
-            archive-format: tar.gz
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
 
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@4be9e76fd7c4901c61fb841f559994984270fce7 # stable
+      - uses: dtolnay/rust-toolchain@4be9e76fd7c4901c61fb841f559994984270fce7
 
-      - name: Add target
-        run: rustup target add ${{ matrix.target }}
+      - run: rustup target add ${{ env.TARGET }}
 
-      - name: Cache Rust dependencies
-        uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5 # v2
+      - uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5
         with:
           workspaces: "."
 
-      - name: Build release binary
-        run: cargo build --release --target ${{ matrix.target }}
+      - run: cargo build --release --target ${{ env.TARGET }}
 
-      - name: Extract version from tag
-        id: version
-        run: |
-          VERSION=${GITHUB_REF#refs/tags/amg-v}
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Extracted version: $VERSION"
+      - id: version
+        run: echo "version=${GITHUB_REF#refs/tags/amg-v}" >> $GITHUB_OUTPUT
 
-      - name: Prepare binary for upload (Linux/macOS)
-        if: matrix.os != 'windows-latest'
+      - name: Create archive
         run: |
           mkdir -p release
-          cp target/${{ matrix.target }}/release/${{ matrix.binary-name }} release/
-          chmod +x release/${{ matrix.binary-name }}
-          cd release
-          tar czf ../amg-${{ steps.version.outputs.version }}-${{ matrix.target }}.${{ matrix.archive-format }} *
-          cd ..
+          cp target/${{ env.TARGET }}/release/${{ env.BINARY }} release/
+          chmod +x release/${{ env.BINARY }}
+          cd release && tar czf ../amg-${{ steps.version.outputs.version }}-${{ env.TARGET }}.tar.gz *
+        shell: bash
+        if: matrix.os != 'windows-latest'
 
-      - name: Prepare binary for upload (Windows)
-        if: matrix.os == 'windows-latest'
+      - name: Create archive
         run: |
           mkdir release
-          copy target\${{ matrix.target }}\release\${{ matrix.binary-name }} release\
-          cd release
-          tar czf ..\amg-${{ steps.version.outputs.version }}-${{ matrix.target }}.${{ matrix.archive-format }} *
-          cd ..
+          copy target\${{ env.TARGET }}\release\${{ env.BINARY }} release\
+          cd release && tar czf ..\amg-${{ steps.version.outputs.version }}-${{ env.TARGET }}.tar.gz *
+        shell: cmd
+        if: matrix.os == 'windows-latest'
 
-      - name: Upload to GitHub Release
-        uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2
+      - name: Generate checksum
+        run: |
+          if [ "${{ matrix.os }}" = "macos-latest" ]; then
+            shasum -a 256 amg-${{ steps.version.outputs.version }}-${{ env.TARGET }}.tar.gz > amg-${{ steps.version.outputs.version }}-${{ env.TARGET }}.tar.gz.sha256
+          else
+            sha256sum amg-${{ steps.version.outputs.version }}-${{ env.TARGET }}.tar.gz > amg-${{ steps.version.outputs.version }}-${{ env.TARGET }}.tar.gz.sha256
+          fi
+        shell: bash
+        if: matrix.os != 'windows-latest'
+
+      - name: Generate checksum
+        run: |
+          $hash = (Get-FileHash -Path amg-${{ steps.version.outputs.version }}-${{ env.TARGET }}.tar.gz -Algorithm SHA256).Hash.ToLower()
+          "$hash  amg-${{ steps.version.outputs.version }}-${{ env.TARGET }}.tar.gz" | Out-File -FilePath amg-${{ steps.version.outputs.version }}-${{ env.TARGET }}.tar.gz.sha256 -Encoding ASCII
+        shell: pwsh
+        if: matrix.os == 'windows-latest'
+
+      - uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b
         with:
           files: |
-            amg-${{ steps.version.outputs.version }}-${{ matrix.target }}.${{ matrix.archive-format }}
+            amg-${{ steps.version.outputs.version }}-${{ env.TARGET }}.tar.gz
+            amg-${{ steps.version.outputs.version }}-${{ env.TARGET }}.tar.gz.sha256
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
