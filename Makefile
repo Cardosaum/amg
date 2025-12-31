@@ -32,12 +32,12 @@ build-release: ## Build the project in release mode
 	@cargo build --release
 	@echo "$(GREEN)✓ Release build complete$(NC)"
 
-test: ## Run tests with cargo test
+test: fmt-check ## Run tests with cargo test (includes format check)
 	@echo "$(BLUE)Running tests...$(NC)"
 	@cargo test --all-targets
 	@echo "$(GREEN)✓ Tests passed$(NC)"
 
-test-nextest: ## Run tests with nextest (faster, parallel)
+test-nextest: fmt-check ## Run tests with nextest (faster, parallel, includes format check)
 	@echo "$(BLUE)Running tests with nextest...$(NC)"
 	@cargo nextest run --all-targets
 	@echo "$(GREEN)✓ Tests passed$(NC)"
@@ -59,21 +59,24 @@ fmt: ## Format code with rustfmt
 
 fmt-check: ## Check code formatting without modifying files
 	@echo "$(BLUE)Checking code formatting...$(NC)"
-	@cargo fmt --all -- --check
+	@cargo fmt --all -- --check || (echo "$(RED)Formatting check failed! Run 'make fmt' to fix.$(NC)" && exit 1)
 	@echo "$(GREEN)✓ Formatting check passed$(NC)"
 
-check: ## Run cargo check (compile without building)
+check: fmt-check ## Run cargo check (compile without building, includes format check)
 	@echo "$(BLUE)Running cargo check...$(NC)"
 	@cargo check --all-targets
 	@echo "$(GREEN)✓ Check passed$(NC)"
 
-ci: ## Run all CI checks (lint, fmt-check, test-nextest)
+ci: ## Run all CI checks (fmt-check, lint, check, test-nextest)
 	@echo "$(BLUE)Running CI pipeline...$(NC)"
 	@$(MAKE) fmt-check
 	@$(MAKE) lint
 	@$(MAKE) check
 	@$(MAKE) test-nextest
 	@echo "$(GREEN)✓ All CI checks passed$(NC)"
+
+all: fmt-check lint check test-nextest build-release ## Run all checks and build release (ensures code quality)
+	@echo "$(GREEN)✓ All checks passed and release build complete$(NC)"
 
 clean: ## Clean build artifacts
 	@echo "$(BLUE)Cleaning build artifacts...$(NC)"
