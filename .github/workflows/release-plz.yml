@@ -11,6 +11,14 @@ on:
 env:
   CARGO_TERM_COLOR: always
 
+# Workflow-level permissions ensure that all jobs have the necessary permissions
+# even if repository settings restrict default GITHUB_TOKEN permissions.
+# Individual jobs can override these permissions if needed.
+permissions:
+  contents: write
+  pull-requests: write
+  id-token: write  # Required for trusted publishing (OIDC) to crates.io
+
 # Note: This workflow uses GitHub Secrets for token management.
 # For centralized secret management with Bitwarden CLI, you can optionally
 # integrate Bitwarden CLI by:
@@ -19,6 +27,15 @@ env:
 # 3. Retrieving tokens from Bitwarden vault
 # 4. Using retrieved tokens in release-plz steps
 # See docs/BITWARDEN_SETUP.md for details on Bitwarden CLI integration.
+#
+# IMPORTANT: If this workflow fails with "GitHub Actions is not permitted to
+# create or approve pull requests" (403 error), verify repository settings:
+# - Go to Settings → Actions → General → Workflow permissions
+# - Ensure "Read and write permissions" is selected (not "Read repository
+#   contents and packages permissions")
+# - Or ensure "Allow GitHub Actions to create and approve pull requests" is enabled
+# - If repository settings cannot be changed, use a Personal Access Token (PAT)
+#   with 'repo' scope stored as RELEASE_PLZ_TOKEN secret instead of GITHUB_TOKEN
 
 jobs:
   # Release unpublished packages.
@@ -56,6 +73,9 @@ jobs:
     runs-on: ubuntu-latest
     # Only run for the repository owner to prevent forks from running
     if: github.repository_owner == 'Cardosaum'
+    # Explicit permissions required for creating pull requests.
+    # These permissions are also set at workflow level, but job-level
+    # permissions ensure they apply even if workflow-level permissions are restricted.
     permissions:
       contents: write
       pull-requests: write
@@ -77,6 +97,9 @@ jobs:
         with:
           command: release-pr
         env:
+          # GITHUB_TOKEN is automatically provided by GitHub Actions.
+          # If repository settings restrict Actions from creating PRs, use a PAT
+          # stored as RELEASE_PLZ_TOKEN secret instead: GITHUB_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # CARGO_REGISTRY_TOKEN is needed for release-pr to check published versions
           # CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
