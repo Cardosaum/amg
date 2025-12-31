@@ -11,7 +11,7 @@ RED := \033[0;31m
 NC := \033[0m # No Color
 
 # Binary name
-BINARY := codex_resume_branch
+BINARY := amg
 
 help: ## Show this help message
 	@echo "$(BLUE)Available targets:$(NC)"
