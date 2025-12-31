@@ -8,7 +8,31 @@ A command-line tool to manage and resume Codex sessions by git branch name.
 
 ## Installation
 
-### From Source
+### Using Makefile (Recommended)
+
+```bash
+git clone https://github.com/Cardosaum/amg.git
+cd amg
+make install
+```
+
+This installs the binary to `$HOME/.cargo/bin` (default Cargo installation directory). Ensure `$HOME/.cargo/bin` is in your PATH (typically done automatically by rustup).
+
+For a custom installation directory:
+
+```bash
+make install-custom ROOT=$HOME/.local
+```
+
+### Using Cargo
+
+```bash
+git clone https://github.com/Cardosaum/amg.git
+cd amg
+cargo install --path .
+```
+
+### From Source (Build Only)
 
 ```bash
 git clone https://github.com/Cardosaum/amg.git
@@ -17,12 +41,6 @@ cargo build --release
 ```
 
 The binary will be available at `target/release/amg`.
-
-### Using Cargo
-
-```bash
-cargo install --path .
-```
 
 ## Usage
 

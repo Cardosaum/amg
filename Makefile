@@ -1,4 +1,4 @@
-.PHONY: help build build-release test test-nextest lint lint-fix fmt fmt-check check ci clean install-deps
+.PHONY: help build build-release test test-nextest lint lint-fix fmt fmt-check check ci clean install-deps install install-custom
 
 # Default target
 .DEFAULT_GOAL := help
@@ -87,4 +87,20 @@ update: ## Update all dependencies to latest versions
 	@echo "$(BLUE)Updating dependencies...$(NC)"
 	@cargo upgrade --incompatible
 	@echo "$(GREEN)✓ Dependencies updated$(NC)"
+
+install: ## Install the binary to $HOME/.cargo/bin (default Cargo installation directory)
+	@echo "$(BLUE)Installing $(BINARY) to $$HOME/.cargo/bin...$(NC)"
+	@cargo install --path .
+	@echo "$(GREEN)✓ $(BINARY) installed successfully$(NC)"
+	@echo "$(YELLOW)Note: Ensure $$HOME/.cargo/bin is in your PATH$(NC)"
+
+install-custom: ## Install the binary to a custom directory (usage: make install-custom ROOT=/path/to/root)
+	@if [ -z "$(ROOT)" ]; then \
+		echo "$(RED)Error: ROOT variable must be set. Example: make install-custom ROOT=$$HOME/.local$(NC)"; \
+		exit 1; \
+	fi
+	@echo "$(BLUE)Installing $(BINARY) to $(ROOT)/bin...$(NC)"
+	@cargo install --path . --root $(ROOT)
+	@echo "$(GREEN)✓ $(BINARY) installed successfully to $(ROOT)/bin$(NC)"
+	@echo "$(YELLOW)Note: Ensure $(ROOT)/bin is in your PATH$(NC)"
 
