@@ -42,8 +42,22 @@ check_bw_installed() {
         echo "" >&2
         exit 1
     fi
-    
-    echo -e "${GREEN}✓ Bitwarden CLI is installed${NC}"
+
+    if ! command -v jq &> /dev/null; then
+        echo -e "${RED}Error: jq is not installed (required for JSON parsing).${NC}" >&2
+        echo "" >&2
+        echo -e "${BLUE}Installation options:${NC}" >&2
+        echo "" >&2
+        echo -e "${YELLOW}macOS (Homebrew):${NC}" >&2
+        echo "  brew install jq" >&2
+        echo "" >&2
+        echo -e "${YELLOW}Debian/Ubuntu:${NC}" >&2
+        echo "  sudo apt-get install -y jq" >&2
+        echo "" >&2
+        exit 1
+    fi
+
+    echo -e "${GREEN}✓ Bitwarden CLI and jq are installed${NC}"
 }
 
 # Check if user is logged in

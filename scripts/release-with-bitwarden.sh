@@ -9,7 +9,7 @@
 # Environment Variables:
 #   BW_GITHUB_TOKEN_ITEM - Custom name for GitHub token item (default: amg-release-github-token)
 #   BW_CARGO_TOKEN_ITEM - Custom name for Cargo token item (default: amg-release-cargo-token)
-#   BW_PASSWORD - Master password for non-interactive unlock (optional, use with caution)
+#   BW_PASSWORD - Master password for non-interactive unlock (discouraged; prefer exporting BW_SESSION)
 #   BW_DEBUG - Set to 1 to enable debug output
 #
 # This script:
@@ -245,7 +245,7 @@ unlock_vault() {
                 [ -z "$(command -v timeout)" ] && timeout_cmd="gtimeout"
                 # Allow 120 seconds for user to enter password
                 # Read password prompt from /dev/tty
-                session_key=$($timeout_cmd 120 bash -c 'bw unlock --raw < /dev/tty' 2>&1)
+                session_key=$($timeout_cmd 120 bw unlock --raw < /dev/tty 2>&1)
                 local unlock_exit_code=$?
             else
                 # No timeout, read from /dev/tty
@@ -300,21 +300,28 @@ unlock_vault() {
 }
 
 # Run bw command with timeout and proper error handling
-# Usage: bw_cmd "command" [timeout_seconds]
+# Usage: bw_cmd <timeout_seconds> bw <args...>
 bw_cmd() {
-    local cmd="$1"
-    local timeout_seconds="${2:-10}"
+    local timeout_seconds="${1:-10}"
+
+    # Require at least: <timeout_seconds> <command>
+    if [ "$#" -lt 2 ]; then
+        log_error "bw_cmd: missing command"
+        return 2
+    fi
+    shift
+
     local cmd_output
     local exit_code
-    
+
     # Use timeout if available, otherwise just run the command
     if command -v timeout &> /dev/null || command -v gtimeout &> /dev/null; then
         local timeout_cmd="timeout"
         [ -z "$(command -v timeout)" ] && timeout_cmd="gtimeout"
-        # Use timeout with proper signal handling
-        cmd_output=$($timeout_cmd "$timeout_seconds" bash -c "$cmd" 2>&1)
+        # Execute without invoking a shell (prevents command injection)
+        cmd_output=$($timeout_cmd "$timeout_seconds" "$@" 2>&1)
         exit_code=$?
-        
+
         # Check if timeout occurred
         if [ $exit_code -eq 124 ] || [ $exit_code -eq 143 ]; then
             log_debug "Command timed out after ${timeout_seconds}s"
@@ -322,10 +329,10 @@ bw_cmd() {
         fi
     else
         # Fallback: run without timeout (not ideal but better than nothing)
-        cmd_output=$(bash -c "$cmd" 2>&1)
+        cmd_output=$("$@" 2>&1)
         exit_code=$?
     fi
-    
+
     # Check for common error patterns that indicate vault needs unlocking
     if [[ "$cmd_output" == *"Master password"* ]] || \
        [[ "$cmd_output" == *"Vault is locked"* ]] || \
@@ -335,7 +342,7 @@ bw_cmd() {
         log_debug "Command requires authentication: ${cmd_output:0:100}"
         return 1
     fi
-    
+
     echo "$cmd_output"
     return $exit_code
 }
@@ -351,7 +358,7 @@ get_token() {
     
     # Try direct password command first (simplest and fastest)
     log_debug "Trying direct password command..."
-    token=$(bw_cmd "bw get password \"$item_name\" --session \"$session_key\"" "$timeout_seconds")
+    token=$(bw_cmd "$timeout_seconds" bw get password "$item_name" --session "$session_key")
     local pw_exit_code=$?
     
     if [ $pw_exit_code -eq 0 ] && [ -n "$token" ] && [ "$token" != "null" ] && \
@@ -366,7 +373,7 @@ get_token() {
     log_debug "Password command failed (exit: $pw_exit_code), trying get item..."
     
     # Get the item as JSON with timeout
-    item_json=$(bw_cmd "bw get item \"$item_name\" --session \"$session_key\"" "$timeout_seconds")
+    item_json=$(bw_cmd "$timeout_seconds" bw get item "$item_name" --session "$session_key")
     local exit_code=$?
     
     if [ $exit_code -ne 0 ] || [ -z "$item_json" ] || [ "$item_json" = "null" ] || [[ "$item_json" == *"error"* ]]; then
@@ -505,7 +512,7 @@ main() {
     if [ "$DEBUG" = "1" ]; then
         log_debug "Available items in vault:"
         local items_list
-        items_list=$(bw_cmd "bw list items --session \"$session_key\"" 5)
+        items_list=$(bw_cmd 5 bw list items --session "$session_key")
         if [ $? -eq 0 ] && [ -n "$items_list" ]; then
             echo "$items_list" | jq -r '.[].name' 2>/dev/null | head -10 || log_debug "Could not parse items list"
         else
@@ -553,10 +560,10 @@ main() {
     log_debug "Changed to project root: $PROJECT_ROOT"
     
     # Run release-plz command
-    # Pass --git-token explicitly (release-plz requires this or GIT_TOKEN env var)
-    log_info "Running: release-plz $command --git-token <hidden>"
+    # Avoid passing secrets on the command line; release-plz will read GIT_TOKEN from env.
+    log_info "Running: release-plz $command"
     
-    if release-plz "$command" --git-token "$github_token"; then
+    if release-plz "$command"; then
         log_success "Release-plz completed successfully"
     else
         local exit_code=$?
