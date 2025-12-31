@@ -1,8 +1,4 @@
-use std::path::{Path, PathBuf};
-
-use anyhow::{bail, Result};
-
-use super::constants::{DOT_CODEX_DIR, ENV_HOME, ENV_TMUX};
+use super::prelude::*;
 
 pub(super) fn default_codexdir() -> Result<PathBuf> {
     match std::env::var_os(ENV_HOME) {
