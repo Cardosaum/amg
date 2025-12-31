@@ -22,6 +22,13 @@ jobs:
     permissions:
       contents: write
     steps:
+      - name: Validate secrets
+        run: |
+          if [ -z "${{ secrets.CARGO_REGISTRY_TOKEN }}" ]; then
+            echo "::error::CARGO_REGISTRY_TOKEN secret is required but not set"
+            exit 1
+          fi
+
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
         with:
           fetch-depth: 0
@@ -32,9 +39,13 @@ jobs:
         with:
           workspaces: "."
 
+      - name: Verify build
+        run: cargo check --release --all-features || (echo "::error::Build verification failed" && exit 1)
+
       - uses: release-plz/action@487eb7b5c085a664d5c5ca05f4159bd9b591182a
         with:
           command: release
+        continue-on-error: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
@@ -107,40 +118,122 @@ jobs:
 
       - run: cargo build --release --target ${{ env.TARGET }}
 
+      - name: Verify binary exists
+        run: |
+          if [ ! -f "target/${{ env.TARGET }}/release/${{ env.BINARY }}" ]; then
+            echo "::error::Binary not found: target/${{ env.TARGET }}/release/${{ env.BINARY }}"
+            exit 1
+          fi
+        shell: bash
+        if: matrix.os != 'windows-latest'
+
+      - name: Verify binary exists
+        run: |
+          if (-not (Test-Path "target\${{ env.TARGET }}\release\${{ env.BINARY }}")) {
+            Write-Error "Binary not found: target\${{ env.TARGET }}\release\${{ env.BINARY }}"
+            exit 1
+          }
+        shell: pwsh
+        if: matrix.os == 'windows-latest'
+
       - id: version
-        run: echo "version=${GITHUB_REF#refs/tags/amg-v}" >> $GITHUB_OUTPUT
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/amg-v}
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.-]+)?(\+[a-zA-Z0-9.-]+)?$ ]]; then
+            echo "::error::Invalid version format: $VERSION"
+            exit 1
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+        shell: bash
 
       - name: Create archive
         run: |
+          set -euo pipefail
           mkdir -p release
-          cp target/${{ env.TARGET }}/release/${{ env.BINARY }} release/
-          chmod +x release/${{ env.BINARY }}
-          cd release && tar czf ../amg-${{ steps.version.outputs.version }}-${{ env.TARGET }}.tar.gz *
+          cp "target/${{ env.TARGET }}/release/${{ env.BINARY }}" release/
+          chmod +x "release/${{ env.BINARY }}"
+          cd release && tar czf "../amg-${{ steps.version.outputs.version }}-${{ env.TARGET }}.tar.gz" *
+          if [ ! -f "../amg-${{ steps.version.outputs.version }}-${{ env.TARGET }}.tar.gz" ]; then
+            echo "::error::Archive creation failed"
+            exit 1
+          fi
         shell: bash
         if: matrix.os != 'windows-latest'
 
       - name: Create archive
         run: |
-          mkdir release
-          copy target\${{ env.TARGET }}\release\${{ env.BINARY }} release\
-          cd release && tar czf ..\amg-${{ steps.version.outputs.version }}-${{ env.TARGET }}.tar.gz *
-        shell: cmd
+          $ErrorActionPreference = 'Stop'
+          New-Item -ItemType Directory -Force -Path release | Out-Null
+          Copy-Item "target\${{ env.TARGET }}\release\${{ env.BINARY }}" release\
+          Set-Location release
+          tar czf "..\amg-${{ steps.version.outputs.version }}-${{ env.TARGET }}.tar.gz" *
+          Set-Location ..
+          if (-not (Test-Path "amg-${{ steps.version.outputs.version }}-${{ env.TARGET }}.tar.gz")) {
+            Write-Error "Archive creation failed"
+            exit 1
+          }
+        shell: pwsh
         if: matrix.os == 'windows-latest'
 
       - name: Generate checksum
         run: |
+          set -euo pipefail
+          ARCHIVE="amg-${{ steps.version.outputs.version }}-${{ env.TARGET }}.tar.gz"
+          if [ ! -f "$ARCHIVE" ]; then
+            echo "::error::Archive not found: $ARCHIVE"
+            exit 1
+          fi
           if [ "${{ matrix.os }}" = "macos-latest" ]; then
-            shasum -a 256 amg-${{ steps.version.outputs.version }}-${{ env.TARGET }}.tar.gz > amg-${{ steps.version.outputs.version }}-${{ env.TARGET }}.tar.gz.sha256
+            shasum -a 256 "$ARCHIVE" > "${ARCHIVE}.sha256"
           else
-            sha256sum amg-${{ steps.version.outputs.version }}-${{ env.TARGET }}.tar.gz > amg-${{ steps.version.outputs.version }}-${{ env.TARGET }}.tar.gz.sha256
+            sha256sum "$ARCHIVE" > "${ARCHIVE}.sha256"
+          fi
+          if [ ! -f "${ARCHIVE}.sha256" ]; then
+            echo "::error::Checksum file creation failed"
+            exit 1
           fi
         shell: bash
         if: matrix.os != 'windows-latest'
 
       - name: Generate checksum
         run: |
-          $hash = (Get-FileHash -Path amg-${{ steps.version.outputs.version }}-${{ env.TARGET }}.tar.gz -Algorithm SHA256).Hash.ToLower()
-          "$hash  amg-${{ steps.version.outputs.version }}-${{ env.TARGET }}.tar.gz" | Out-File -FilePath amg-${{ steps.version.outputs.version }}-${{ env.TARGET }}.tar.gz.sha256 -Encoding ASCII
+          $ErrorActionPreference = 'Stop'
+          $archive = "amg-${{ steps.version.outputs.version }}-${{ env.TARGET }}.tar.gz"
+          if (-not (Test-Path $archive)) {
+            Write-Error "Archive not found: $archive"
+            exit 1
+          }
+          $hash = (Get-FileHash -Path $archive -Algorithm SHA256).Hash.ToLower()
+          "${hash}  ${archive}" | Out-File -FilePath "${archive}.sha256" -Encoding ASCII
+          if (-not (Test-Path "${archive}.sha256")) {
+            Write-Error "Checksum file creation failed"
+            exit 1
+          }
+        shell: pwsh
+        if: matrix.os == 'windows-latest'
+
+      - name: Verify checksum
+        run: |
+          set -euo pipefail
+          ARCHIVE="amg-${{ steps.version.outputs.version }}-${{ env.TARGET }}.tar.gz"
+          if [ "${{ matrix.os }}" = "macos-latest" ]; then
+            shasum -a 256 -c "${ARCHIVE}.sha256" || (echo "::error::Checksum verification failed" && exit 1)
+          else
+            sha256sum -c "${ARCHIVE}.sha256" || (echo "::error::Checksum verification failed" && exit 1)
+          fi
+        shell: bash
+        if: matrix.os != 'windows-latest'
+
+      - name: Verify checksum
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $archive = "amg-${{ steps.version.outputs.version }}-${{ env.TARGET }}.tar.gz"
+          $expectedHash = (Get-Content "${archive}.sha256" | Select-Object -First 1).Split(' ')[0]
+          $actualHash = (Get-FileHash -Path $archive -Algorithm SHA256).Hash.ToLower()
+          if ($expectedHash -ne $actualHash) {
+            Write-Error "Checksum verification failed"
+            exit 1
+          }
         shell: pwsh
         if: matrix.os == 'windows-latest'
 
@@ -149,6 +242,7 @@ jobs:
           files: |
             amg-${{ steps.version.outputs.version }}-${{ env.TARGET }}.tar.gz
             amg-${{ steps.version.outputs.version }}-${{ env.TARGET }}.tar.gz.sha256
+        continue-on-error: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
