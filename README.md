@@ -1,5 +1,14 @@
 # amg
 
+[![CI](https://github.com/Cardosaum/amg/actions/workflows/ci.yml/badge.svg)](https://github.com/Cardosaum/amg/actions/workflows/ci.yml)
+[![Release](https://github.com/Cardosaum/amg/actions/workflows/release-plz.yml/badge.svg)](https://github.com/Cardosaum/amg/actions/workflows/release-plz.yml)
+[![Crates.io](https://img.shields.io/crates/v/amg)](https://crates.io/crates/amg)
+[![docs.rs](https://docs.rs/amg/badge.svg)](https://docs.rs/amg)
+[![License](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue)](LICENSE-APACHE)
+
+> [!WARNING]
+> **Early Development**: This project is in early development. APIs and behavior may change without notice.
+
 A command-line tool to manage and resume Codex sessions by git branch name.
 
 ## Description
@@ -8,48 +17,22 @@ A command-line tool to manage and resume Codex sessions by git branch name.
 
 ## Installation
 
-### Using cargo-binstall (Recommended - Fastest)
-
-Install pre-built binaries without compiling from source:
+### Using cargo-binstall (Recommended)
 
 ```bash
-# Install cargo-binstall first (one-time setup)
 cargo install cargo-binstall
-
-# Install amg
 cargo binstall amg
 ```
 
-This method downloads pre-built binaries from GitHub Releases, making installation much faster than compiling from source. Binaries are available for:
-- Linux (x86_64)
-- macOS (Intel and Apple Silicon)
-- Windows (x86_64)
-
-### Using Makefile
-
-```bash
-git clone https://github.com/Cardosaum/amg.git
-cd amg
-make install
-```
-
-This installs the binary to `$HOME/.cargo/bin` (default Cargo installation directory). Ensure `$HOME/.cargo/bin` is in your PATH (typically done automatically by rustup).
-
-For a custom installation directory:
-
-```bash
-make install-custom ROOT=$HOME/.local
-```
+Pre-built binaries are available for Linux (x86_64), macOS (Intel/Apple Silicon), and Windows (x86_64).
 
 ### Using Cargo
 
 ```bash
-git clone https://github.com/Cardosaum/amg.git
-cd amg
-cargo install --path .
+cargo install --git https://github.com/Cardosaum/amg.git
 ```
 
-### From Source (Build Only)
+### From Source
 
 ```bash
 git clone https://github.com/Cardosaum/amg.git
@@ -57,7 +40,7 @@ cd amg
 cargo build --release
 ```
 
-The binary will be available at `target/release/amg`.
+The binary will be at `target/release/amg`. To install: `make install` (installs to `$HOME/.cargo/bin`).
 
 ## Usage
 
@@ -104,13 +87,13 @@ amg resume-branch main
 # Resume session for 'main' branch
 amg resume-branch main --repo ~/projects/my-repo
 
-# Dry run to see what command would be executed
+# Dry run
 amg rb feature-branch --repo ~/projects/my-repo --dry-run
 
-# Resume without tmux (run inline)
+# Without tmux
 amg resume dev --repo ~/projects/my-repo --no-tmux
 
-# Use environment variables
+# With environment variables
 export CODEX_REPO=~/projects/my-repo
 amg rb main
 ```
@@ -191,148 +174,24 @@ This project uses [release-plz](https://release-plz.dev) for automated releases.
 
 ### How Releases Work
 
-1. **Release PR Creation**: When commits are pushed to `main`, release-plz automatically creates or updates a release Pull Request with:
-   - Version bumps in `Cargo.toml` (based on [Conventional Commits](https://www.conventionalcommits.org/))
-   - Updated `CHANGELOG.md` (generated from git history)
-   - Updated `Cargo.lock` (if dependencies changed)
+1. **Push to main** → release-plz creates/updates a release PR with version bumps and changelog
+2. **Review & merge PR** → release-plz creates tag and publishes to crates.io
+3. **Tag creation** → binaries are built and uploaded to GitHub Releases
 
-2. **Release PR Review**: Maintainers review the release PR to ensure:
-   - Version bumps are correct (semver based on commit types)
-   - Changelog accurately reflects changes
-   - All CI checks pass
+Versions follow [Semantic Versioning](https://semver.org/) based on commit types:
+- `feat:` → minor version bump
+- `fix:` → patch version bump
+- Breaking changes → major version bump
 
-3. **Publishing**: When the release PR is merged, release-plz automatically:
-   - Creates a git tag (format: `amg-v<version>`, e.g., `amg-v0.1.0`)
-   - Publishes the crate to [crates.io](https://crates.io)
-   - Creates a GitHub release with changelog
-
-### Version Bumping
-
-Versions follow [Semantic Versioning](https://semver.org/) and are determined by commit types:
-
-- **Major version** (`1.0.0` → `2.0.0`): Breaking changes (detected by `cargo-semver-checks` or commits with `BREAKING CHANGE:`)
-- **Minor version** (`1.0.0` → `1.1.0`): New features (`feat:` commits)
-- **Patch version** (`1.0.0` → `1.0.1`): Bug fixes (`fix:` commits)
-
-### For Contributors
-
-**Important**: All commits must follow the [Conventional Commits](https://www.conventionalcommits.org/) specification for automatic versioning to work correctly.
-
-Commit format: `type(scope): description`
-
-- `feat(cli): add new command` → minor version bump
-- `fix(scan): resolve session matching bug` → patch version bump
-- `refactor(util): improve error handling` → no version bump (unless breaking)
-- `docs: update README` → no version bump
-- `chore(deps): update dependencies` → no version bump
-
-See [`.cursor/rules/commits/RULE.md`](.cursor/rules/commits/RULE.md) for detailed commit guidelines.
-
-### Manual Release (if needed)
-
-If you need to trigger a release manually or test locally:
+### Manual Release
 
 ```bash
-# Install release-plz
 cargo install --locked release-plz
-
-# Update versions and changelog (creates release PR locally)
-release-plz release-pr
-
-# Publish to crates.io (after merging release PR)
-release-plz release
+release-plz release-pr  # Create release PR
+release-plz release      # Publish (after merging PR)
 ```
 
-### Secure Token Management with Bitwarden
-
-For local development, you can use [Bitwarden CLI](https://bitwarden.com/help/cli/) to securely manage tokens required by release-plz.
-
-> Note: This repository intentionally does **not** integrate Bitwarden into GitHub Actions. CI releases use GitHub-native auth (the workflow `GITHUB_TOKEN` plus token-based authentication for crates.io publishing).
-
-#### Quick Start
-
-```bash
-# One-time setup
-make setup-bitwarden
-
-# Run release-pr with tokens from Bitwarden
-make release-pr-bw
-
-# Run release with tokens from Bitwarden
-make release-bw
-```
-
-#### Setup
-
-1. **Install Bitwarden CLI**:
-   ```bash
-   brew install bitwarden-cli  # macOS
-   # See docs/BITWARDEN_SETUP.md for other platforms
-   ```
-
-2. **Run setup script**:
-   ```bash
-   make setup-bitwarden
-   ```
-
-3. **Create vault items** in Bitwarden:
-   - `amg-release-github-token`: Store your GitHub Personal Access Token
-   - `amg-release-cargo-token` (optional): Store your crates.io token
-
-#### Usage
-
-**Recommended Workflow:**
-
-1. **Unlock Bitwarden and export session** (do this once per terminal session):
-   ```bash
-   export BW_SESSION=$(bw unlock --raw)
-   ```
-
-2. **Run release commands:**
-   ```bash
-   make release-pr-bw    # Run release-pr with Bitwarden tokens
-   make release-bw        # Run release with Bitwarden tokens
-   ```
-
-**Alternative: Interactive Unlock**
-
-If you haven't exported `BW_SESSION`, the script will prompt for your password:
-```bash
-make release-pr-bw    # Will prompt for Bitwarden master password
-```
-
-**Using scripts directly:**
-```bash
-./scripts/release-with-bitwarden.sh release-pr
-./scripts/release-with-bitwarden.sh release
-```
-
-**Customizing vault item names:**
-```bash
-export BW_GITHUB_TOKEN_ITEM=your-github-token-item
-export BW_CARGO_TOKEN_ITEM=your-cargo-token-item
-make release-pr-bw
-```
-
-**For Automation / Non-Interactive (Discouraged):**
-
-Avoid `BW_PASSWORD` (it puts your Bitwarden master password in an environment variable). Prefer unlocking once interactively and exporting `BW_SESSION`:
-
-```bash
-export BW_SESSION=$(bw unlock --raw)
-make release-pr-bw
-```
-
-If you must automate login, use API keys:
-```bash
-export BW_CLIENTID=your_client_id
-export BW_CLIENTSECRET=your_client_secret
-bw login --apikey
-export BW_SESSION=$(bw unlock --raw)
-make release-pr-bw
-```
-
-For detailed setup instructions and troubleshooting, see [docs/BITWARDEN_SETUP.md](docs/BITWARDEN_SETUP.md).
+For secure token management with Bitwarden, see [docs/BITWARDEN_SETUP.md](docs/BITWARDEN_SETUP.md).
 
 ## Contributing
 
@@ -341,27 +200,15 @@ Contributions are welcome! Please ensure:
 1. All tests pass: `make ci`
 2. Code is formatted: `make fmt`
 3. No clippy warnings: `make lint`
-4. **Follow [Conventional Commits](https://www.conventionalcommits.org/)** - This is required for automatic versioning and changelog generation
+4. Follow [Conventional Commits](https://www.conventionalcommits.org/) for automatic versioning
 
-### Commit Message Format
+Commit format: `type(scope): description`
 
-Use the format: `type(scope): description`
+- `feat(cli): add new command` → minor version bump
+- `fix(scan): resolve bug` → patch version bump
+- `docs: update README` → no version bump
 
-**Types:**
-- `feat`: New feature (causes minor version bump)
-- `fix`: Bug fix (causes patch version bump)
-- `refactor`: Code refactoring (no version bump unless breaking)
-- `test`: Adding or updating tests (no version bump)
-- `docs`: Documentation changes (no version bump)
-- `style`: Code style changes (no version bump)
-- `chore`: Maintenance tasks (no version bump)
-
-**Examples:**
-- `feat(cli): add shorthand flag for repo argument`
-- `fix(scan): resolve session matching bug`
-- `docs: update installation instructions`
-
-See [`.cursor/rules/commits/RULE.md`](.cursor/rules/commits/RULE.md) for detailed guidelines.
+See [`.cursor/rules/commits/RULE.md`](.cursor/rules/commits/RULE.md) for details.
 
 ## License
 
@@ -372,11 +219,8 @@ Licensed under either of:
 
 at your option.
 
-## Author
+## Links
 
-Cardosaum
-
-## Repository
-
-https://github.com/Cardosaum/amg
+- Repository: https://github.com/Cardosaum/amg
+- Author: Cardosaum
 
