@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1](https://github.com/Cardosaum/amg/releases/tag/{package}-v{version}) - 2025-12-31
+
+### Other
+
+- tidy up README and add badges
+- fix release-plz workflow to run release on tag creation
+
 - Initial changelog created to support automated releases.
 
 
