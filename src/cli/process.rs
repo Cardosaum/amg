@@ -18,14 +18,14 @@ pub(super) struct Cmd {
 }
 
 impl Cmd {
-/// Converts the command to a shell-quoted string representation.
-///
-/// All arguments are properly quoted for safe shell execution. Single quotes are used
-/// for quoting, with proper escaping for arguments containing quotes.
-///
-/// # Returns
-///
-/// Returns a [`String`] containing the shell-quoted command.
+    /// Converts the command to a shell-quoted string representation.
+    ///
+    /// All arguments are properly quoted for safe shell execution. Single quotes are used
+    /// for quoting, with proper escaping for arguments containing quotes.
+    ///
+    /// # Returns
+    ///
+    /// Returns a [`String`] containing the shell-quoted command.
     pub(super) fn as_shell_string(&self) -> String {
         std::iter::once(self.program.as_os_str())
             .chain(self.args.iter().map(OsString::as_os_str))

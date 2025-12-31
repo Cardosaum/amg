@@ -211,7 +211,7 @@ mod help_output {
     use std::process::Command;
 
     fn run_help_command(args: &[&str]) -> String {
-        let mut cmd_args = vec!["run", "--bin", "amg", "--"];
+        let mut cmd_args = vec!["run", "--bin", "amg", "--quiet", "--"];
         cmd_args.extend_from_slice(args);
         cmd_args.push("--help");
 
@@ -220,53 +220,80 @@ mod help_output {
             .output()
             .expect("Failed to execute cargo run");
 
-        assert!(output.status.success(), "Help command should succeed");
-        String::from_utf8_lossy(&output.stdout).to_string()
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            panic!(
+                "Help command failed with status {:?}. Stderr: {}",
+                output.status, stderr
+            );
+        }
+
+        let stdout = String::from_utf8_lossy(&output.stdout).to_string();
+        // In case cargo outputs compilation messages, also check stderr
+        let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+
+        // Combine stdout and stderr, but prefer stdout (help text should be there)
+        if stdout.trim().is_empty() && !stderr.trim().is_empty() {
+            stderr
+        } else {
+            stdout
+        }
     }
 
     #[test]
     fn main_help_is_well_formed() {
-        let stdout = run_help_command(&[]);
+        let output = run_help_command(&[]);
         assert!(
-            stdout.contains(ABOUT_MAIN),
-            "Help output should contain main command description"
+            output.contains(ABOUT_MAIN),
+            "Help output should contain main command description '{}'. Got output:\n{}",
+            ABOUT_MAIN,
+            output
         );
         assert!(
-            stdout.contains(RESUME_BRANCH),
-            "Help output should mention '{RESUME_BRANCH}' subcommand"
+            output.contains(RESUME_BRANCH),
+            "Help output should mention '{RESUME_BRANCH}' subcommand. Got output:\n{}",
+            output
         );
         assert!(
-            stdout.contains("USAGE:") || stdout.contains("Usage:"),
-            "Help output should contain usage section"
+            output.contains("USAGE:") || output.contains("Usage:"),
+            "Help output should contain usage section. Got output:\n{}",
+            output
         );
     }
 
     #[test]
     fn resume_branch_help_is_well_formed() {
-        let stdout = run_help_command(&[RESUME_BRANCH]);
+        let output = run_help_command(&[RESUME_BRANCH]);
         assert!(
-            stdout.contains(ABOUT_RESUME_BRANCH),
-            "resume-branch help output should contain description"
+            output.contains(ABOUT_RESUME_BRANCH),
+            "resume-branch help output should contain description '{}'. Got output:\n{}",
+            ABOUT_RESUME_BRANCH,
+            output
         );
         assert!(
-            stdout.contains("--repo") || stdout.contains("-r"),
-            "resume-branch help output should mention repo flag"
+            output.contains("--repo") || output.contains("-r"),
+            "resume-branch help output should mention repo flag. Got output:\n{}",
+            output
         );
         assert!(
-            stdout.contains("--codexdir"),
-            "resume-branch help output should mention codexdir flag"
+            output.contains("--codexdir"),
+            "resume-branch help output should mention codexdir flag. Got output:\n{}",
+            output
         );
         assert!(
-            stdout.contains("--dry-run") || stdout.contains("-n"),
-            "resume-branch help output should mention dry-run flag"
+            output.contains("--dry-run") || output.contains("-n"),
+            "resume-branch help output should mention dry-run flag. Got output:\n{}",
+            output
         );
         assert!(
-            stdout.contains("--no-tmux"),
-            "resume-branch help output should mention no-tmux flag"
+            output.contains("--no-tmux"),
+            "resume-branch help output should mention no-tmux flag. Got output:\n{}",
+            output
         );
         assert!(
-            stdout.contains("USAGE:") || stdout.contains("Usage:"),
-            "resume-branch help output should contain usage section"
+            output.contains("USAGE:") || output.contains("Usage:"),
+            "resume-branch help output should contain usage section. Got output:\n{}",
+            output
         );
     }
 }
