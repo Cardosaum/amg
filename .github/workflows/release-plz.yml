@@ -11,6 +11,15 @@ on:
 env:
   CARGO_TERM_COLOR: always
 
+# Note: This workflow uses GitHub Secrets for token management.
+# For centralized secret management with Bitwarden CLI, you can optionally
+# integrate Bitwarden CLI by:
+# 1. Adding Bitwarden CLI installation step
+# 2. Authenticating with Bitwarden API key (stored as GitHub Secret)
+# 3. Retrieving tokens from Bitwarden vault
+# 4. Using retrieved tokens in release-plz steps
+# See docs/BITWARDEN_SETUP.md for details on Bitwarden CLI integration.
+
 jobs:
   # Release unpublished packages.
   release-plz-release:

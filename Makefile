@@ -1,4 +1,4 @@
-.PHONY: help build build-release test test-nextest lint lint-fix fmt fmt-check check ci clean install-deps install install-custom
+.PHONY: help build build-release test test-nextest lint lint-fix fmt fmt-check check ci clean install-deps install install-custom release-pr-bw release-bw setup-bitwarden
 
 # Default target
 .DEFAULT_GOAL := help
@@ -103,4 +103,15 @@ install-custom: ## Install the binary to a custom directory (usage: make install
 	@cargo install --path . --root $(ROOT)
 	@echo "$(GREEN)✓ $(BINARY) installed successfully to $(ROOT)/bin$(NC)"
 	@echo "$(YELLOW)Note: Ensure $(ROOT)/bin is in your PATH$(NC)"
+
+setup-bitwarden: ## Set up Bitwarden CLI for secure token management
+	@echo "$(BLUE)Setting up Bitwarden CLI...$(NC)"
+	@./scripts/setup-bitwarden.sh
+	@echo "$(GREEN)✓ Bitwarden setup complete$(NC)"
+
+release-pr-bw: ## Run release-plz release-pr with tokens from Bitwarden
+	@./scripts/release-with-bitwarden.sh release-pr
+
+release-bw: ## Run release-plz release with tokens from Bitwarden
+	@./scripts/release-with-bitwarden.sh release
 

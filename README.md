@@ -226,6 +226,94 @@ release-plz release-pr
 release-plz release
 ```
 
+### Secure Token Management with Bitwarden
+
+For local development, you can use [Bitwarden CLI](https://bitwarden.com/help/cli/) to securely manage tokens required by release-plz.
+
+#### Quick Start
+
+```bash
+# One-time setup
+make setup-bitwarden
+
+# Run release-pr with tokens from Bitwarden
+make release-pr-bw
+
+# Run release with tokens from Bitwarden
+make release-bw
+```
+
+#### Setup
+
+1. **Install Bitwarden CLI**:
+   ```bash
+   brew install bitwarden-cli  # macOS
+   # See docs/BITWARDEN_SETUP.md for other platforms
+   ```
+
+2. **Run setup script**:
+   ```bash
+   make setup-bitwarden
+   ```
+
+3. **Create vault items** in Bitwarden:
+   - `amg-release-github-token`: Store your GitHub Personal Access Token
+   - `amg-release-cargo-token` (optional): Store your crates.io token
+
+#### Usage
+
+**Recommended Workflow:**
+
+1. **Unlock Bitwarden and export session** (do this once per terminal session):
+   ```bash
+   export BW_SESSION=$(bw unlock --raw)
+   ```
+
+2. **Run release commands:**
+   ```bash
+   make release-pr-bw    # Run release-pr with Bitwarden tokens
+   make release-bw        # Run release with Bitwarden tokens
+   ```
+
+**Alternative: Interactive Unlock**
+
+If you haven't exported `BW_SESSION`, the script will prompt for your password:
+```bash
+make release-pr-bw    # Will prompt for Bitwarden master password
+```
+
+**Using scripts directly:**
+```bash
+./scripts/release-with-bitwarden.sh release-pr
+./scripts/release-with-bitwarden.sh release
+```
+
+**Customizing vault item names:**
+```bash
+export BW_GITHUB_TOKEN_ITEM=your-github-token-item
+export BW_CARGO_TOKEN_ITEM=your-cargo-token-item
+make release-pr-bw
+```
+
+**For Automation (Non-Interactive):**
+
+Set `BW_PASSWORD` environment variable (less secure, use with caution):
+```bash
+export BW_PASSWORD=your_master_password
+make release-pr-bw
+```
+
+Or use API keys (most secure):
+```bash
+export BW_CLIENTID=your_client_id
+export BW_CLIENTSECRET=your_client_secret
+bw login --apikey
+export BW_SESSION=$(bw unlock --raw)
+make release-pr-bw
+```
+
+For detailed setup instructions and troubleshooting, see [docs/BITWARDEN_SETUP.md](docs/BITWARDEN_SETUP.md).
+
 ## Contributing
 
 Contributions are welcome! Please ensure:
