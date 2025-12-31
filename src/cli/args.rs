@@ -30,7 +30,7 @@ pub(super) enum Commands {
         branch: String,
 
         /// Repo to grant Codex sandbox access to.
-        #[arg(long, env = "CODEX_REPO")]
+        #[arg(short, long, env = "CODEX_REPO")]
         repo: PathBuf,
 
         /// Codex directory containing JSONL sessions (defaults to `$HOME/.codex`).
