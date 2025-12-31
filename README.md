@@ -247,6 +247,8 @@ release-plz release
 
 For local development, you can use [Bitwarden CLI](https://bitwarden.com/help/cli/) to securely manage tokens required by release-plz.
 
+> Note: This repository intentionally does **not** integrate Bitwarden into GitHub Actions. CI releases use GitHub-native auth (the workflow `GITHUB_TOKEN` plus crates.io trusted publishing via OIDC).
+
 #### Quick Start
 
 ```bash
@@ -312,15 +314,16 @@ export BW_CARGO_TOKEN_ITEM=your-cargo-token-item
 make release-pr-bw
 ```
 
-**For Automation (Non-Interactive):**
+**For Automation / Non-Interactive (Discouraged):**
 
-Set `BW_PASSWORD` environment variable (less secure, use with caution):
+Avoid `BW_PASSWORD` (it puts your Bitwarden master password in an environment variable). Prefer unlocking once interactively and exporting `BW_SESSION`:
+
 ```bash
-export BW_PASSWORD=your_master_password
+export BW_SESSION=$(bw unlock --raw)
 make release-pr-bw
 ```
 
-Or use API keys (most secure):
+If you must automate login, use API keys:
 ```bash
 export BW_CLIENTID=your_client_id
 export BW_CLIENTSECRET=your_client_secret

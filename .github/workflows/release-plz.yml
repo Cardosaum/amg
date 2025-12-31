@@ -37,14 +37,13 @@ env:
 
 jobs:
   # Release unpublished packages.
-  # This job runs when:
-  # 1. Tags matching 'amg-v*' are pushed (created by release-plz after merging release PR)
-  # 2. Automatically publishes to crates.io and creates GitHub release
+  # Runs on pushes to main/master; publishes via crates.io OIDC and creates the `amg-v*` tag + GitHub release.
+  # The tag push triggers the build-release-binaries job below.
   release-plz-release:
     name: Release-plz release
     runs-on: ubuntu-latest
-    # Only run for tags and the repository owner to prevent forks from running
-    if: startsWith(github.ref, 'refs/tags/amg-v') && github.repository_owner == 'Cardosaum'
+    # Only run for main/master pushes on the repository owner (avoid running on tag pushes).
+    if: github.repository_owner == 'Cardosaum' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
     permissions:
       contents: write
       id-token: write  # Required for trusted publishing (OIDC)
@@ -64,22 +63,20 @@ jobs:
           command: release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # CARGO_REGISTRY_TOKEN is only needed if not using trusted publishing
-          # If using trusted publishing, remove this line and set up OIDC on crates.io
-          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+          # Not needed when using crates.io trusted publishing (OIDC).
+          # CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
 
   # Create a PR with the new versions and changelog, preparing the next release.
   # This job runs on every push to main and creates/updates a release PR
-  # When the release PR is merged, release-plz automatically creates a tag (amg-v*)
-  # The tag push triggers the release-plz-release job above
+  # When the release PR is merged, the next push to main/master triggers `release-plz-release`,
+  # which creates the tag (amg-v*). The tag push triggers the build-release-binaries job below.
   release-plz-pr:
     name: Release-plz PR
     runs-on: ubuntu-latest
-    # Only run for the repository owner to prevent forks from running
-    if: github.repository_owner == 'Cardosaum'
+    # Only run for main/master pushes on the repository owner (avoid running on tag pushes).
+    if: github.repository_owner == 'Cardosaum' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
     # Explicit permissions required for creating pull requests.
-    # These permissions are also set at workflow level, but job-level
-    # permissions ensure they apply even if workflow-level permissions are restricted.
+    # Use job-level permissions (least privilege).
     permissions:
       contents: write
       pull-requests: write
