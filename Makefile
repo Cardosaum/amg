@@ -32,12 +32,12 @@ build-release: ## Build the project in release mode
 	@cargo build --release
 	@echo "$(GREEN)✓ Release build complete$(NC)"
 
-test: fmt-check ## Run tests with cargo test (includes format check)
+test: ## Run tests with cargo test
 	@echo "$(BLUE)Running tests...$(NC)"
 	@cargo test --all-targets
 	@echo "$(GREEN)✓ Tests passed$(NC)"
 
-test-nextest: fmt-check ## Run tests with nextest (faster, parallel, includes format check)
+test-nextest: ## Run tests with nextest (faster, parallel)
 	@echo "$(BLUE)Running tests with nextest...$(NC)"
 	@cargo nextest run --all-targets
 	@echo "$(GREEN)✓ Tests passed$(NC)"
