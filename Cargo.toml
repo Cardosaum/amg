@@ -34,3 +34,4 @@ all = "deny"
 
 [dev-dependencies]
 rstest = "0.26.1"
+rstest_reuse = "0.7.0"
