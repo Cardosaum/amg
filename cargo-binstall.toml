@@ -1,0 +1,10 @@
+# cargo-binstall manifest for amg
+# This file enables cargo-binstall to install pre-built binaries from GitHub Releases
+# See https://github.com/cargo-bins/cargo-binstall for more information
+#
+# cargo-binstall will automatically detect and use GitHub Releases if available
+# Falls back to crates.io if GitHub Releases are not available
+
+[bin]
+amg = { version = "*" }
+

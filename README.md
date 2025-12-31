@@ -8,7 +8,24 @@ A command-line tool to manage and resume Codex sessions by git branch name.
 
 ## Installation
 
-### Using Makefile (Recommended)
+### Using cargo-binstall (Recommended - Fastest)
+
+Install pre-built binaries without compiling from source:
+
+```bash
+# Install cargo-binstall first (one-time setup)
+cargo install cargo-binstall
+
+# Install amg
+cargo binstall amg
+```
+
+This method downloads pre-built binaries from GitHub Releases, making installation much faster than compiling from source. Binaries are available for:
+- Linux (x86_64)
+- macOS (Intel and Apple Silicon)
+- Windows (x86_64)
+
+### Using Makefile
 
 ```bash
 git clone https://github.com/Cardosaum/amg.git

@@ -10,6 +10,12 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/Cardosaum/amg"
 documentation = "https://docs.rs/amg"
 
+# cargo-binstall metadata for binary distribution
+# This enables cargo-binstall to install pre-built binaries from GitHub Releases
+[package.metadata.binstall]
+pkg-url = "https://github.com/Cardosaum/amg/releases/download/{version}/amg-{version}-{target}.tar.gz"
+pkg-fmt = "tar.gz"
+
 [dependencies]
 anyhow = "1.0.100"
 clap = { version = "4.5.53", features = ["derive", "env"] }
