@@ -7,6 +7,9 @@ mod process;
 mod scan;
 mod util;
 
+// Re-export Args and Commands for testing
+pub use args::{Args, Commands};
+
 use prelude::*;
 
 pub fn entry() -> ExitCode {

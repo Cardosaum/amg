@@ -6,13 +6,13 @@ use super::prelude::*;
 #[derive(Parser, Debug)]
 #[command(name = "amg")]
 #[command(about = "Manage and resume Codex sessions")]
-pub(super) struct Args {
+pub struct Args {
     #[command(subcommand)]
-    pub(super) command: Commands,
+    pub command: Commands,
 }
 
 #[derive(Subcommand, Debug)]
-pub(super) enum Commands {
+pub enum Commands {
     /// Resume the first Codex session whose first JSONL line has `.payload.git.branch == <branch>`.
     ///
     /// Usage:
