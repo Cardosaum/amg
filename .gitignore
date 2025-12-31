@@ -1,1 +1,5 @@
+# Rust build artifacts
 /target
+
+# Release-plz generated schema files
+.schema/
