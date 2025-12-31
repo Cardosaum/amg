@@ -2,6 +2,10 @@
 name = "amg"
 version = "0.1.0"
 edition = "2024"
+description = "Resume Codex sessions by git branch"
+authors = ["Cardosaum"]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/Cardosaum/amg"
 
 [dependencies]
 anyhow = "1.0.100"
