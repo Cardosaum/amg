@@ -1,22 +1,33 @@
+//! Command-line argument parsing.
+//!
+//! This module defines the CLI structure using `clap` for argument parsing. It handles
+//! subcommands, flags, environment variable integration, and help text generation.
+
 use clap::{Parser, Subcommand};
 
 use super::prelude::*;
 
-/// Codex session management tool
+/// Main command-line arguments structure.
+///
+/// Parses the top-level command and dispatches to subcommands.
 #[derive(Parser, Debug)]
 #[command(name = "amg")]
 #[command(about = "Manage and resume Codex sessions")]
 pub struct Args {
+    /// The subcommand to execute.
     #[command(subcommand)]
     pub command: Commands,
 }
 
+/// Available subcommands.
+///
+/// Each variant represents a different operation the CLI can perform.
 #[derive(Subcommand, Debug)]
 pub enum Commands {
-    /// Resume the first Codex session whose first JSONL line has `.payload.git.branch == <branch>`.
+    /// Resume the first Codex session whose first JSONL line has `.payload.git.branch == branch`.
     ///
     /// Usage:
-    ///     amg resume-branch <branch>
+    ///     amg resume-branch BRANCH
     ///
     /// Required environment variables:
     ///     CODEX_REPO=/path/to/repo
@@ -48,6 +59,20 @@ pub enum Commands {
     },
 }
 
+/// Parses command-line arguments.
+///
+/// Uses `clap` to parse arguments from the command line, environment variables, and defaults.
+///
+/// # Returns
+///
+/// Returns an [`Args`] structure containing the parsed arguments.
+///
+/// # Panics
+///
+/// This function may panic if:
+/// * Required arguments are missing
+/// * Invalid argument combinations are provided
+/// * Help or version flags are used (clap handles these automatically)
 pub(super) fn parse_args() -> Args {
     Args::parse()
 }
