@@ -1,0 +1,37 @@
+# Release-plz configuration for amg crate
+# See https://release-plz.dev/docs/config for full documentation
+
+[workspace]
+# Enable automatic updates of release PRs when new commits are pushed
+update_dependencies = true
+
+# Changelog configuration
+[changelog]
+# Use git-cliff for changelog generation
+# Format follows "Keep a Changelog" standard
+path = "CHANGELOG.md"
+# Include all commits in changelog
+all = true
+
+# Release PR configuration
+[pr]
+# Automatically label the release PR
+auto_label = true
+
+# Semver checks configuration
+[semver_check]
+# Enable cargo-semver-checks to detect API breaking changes
+# This ensures breaking changes trigger major version bumps
+enabled = true
+
+# Git tag configuration
+[git]
+# Tag format: <package-name>-v<version>
+# Example: amg-v0.1.0
+tag_format = "{package}-v{version}"
+
+# Release configuration
+[release]
+# Update Cargo.lock before releasing to ensure consistency
+update_dependencies = true
+

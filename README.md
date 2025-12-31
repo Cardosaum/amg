@@ -168,6 +168,64 @@ src/
 └── lib.rs              # Library root
 ```
 
+## Releases
+
+This project uses [release-plz](https://release-plz.dev) for automated releases. The release process is fully automated through GitHub Actions.
+
+### How Releases Work
+
+1. **Release PR Creation**: When commits are pushed to `main`, release-plz automatically creates or updates a release Pull Request with:
+   - Version bumps in `Cargo.toml` (based on [Conventional Commits](https://www.conventionalcommits.org/))
+   - Updated `CHANGELOG.md` (generated from git history)
+   - Updated `Cargo.lock` (if dependencies changed)
+
+2. **Release PR Review**: Maintainers review the release PR to ensure:
+   - Version bumps are correct (semver based on commit types)
+   - Changelog accurately reflects changes
+   - All CI checks pass
+
+3. **Publishing**: When the release PR is merged, release-plz automatically:
+   - Creates a git tag (format: `amg-v<version>`, e.g., `amg-v0.1.0`)
+   - Publishes the crate to [crates.io](https://crates.io)
+   - Creates a GitHub release with changelog
+
+### Version Bumping
+
+Versions follow [Semantic Versioning](https://semver.org/) and are determined by commit types:
+
+- **Major version** (`1.0.0` → `2.0.0`): Breaking changes (detected by `cargo-semver-checks` or commits with `BREAKING CHANGE:`)
+- **Minor version** (`1.0.0` → `1.1.0`): New features (`feat:` commits)
+- **Patch version** (`1.0.0` → `1.0.1`): Bug fixes (`fix:` commits)
+
+### For Contributors
+
+**Important**: All commits must follow the [Conventional Commits](https://www.conventionalcommits.org/) specification for automatic versioning to work correctly.
+
+Commit format: `type(scope): description`
+
+- `feat(cli): add new command` → minor version bump
+- `fix(scan): resolve session matching bug` → patch version bump
+- `refactor(util): improve error handling` → no version bump (unless breaking)
+- `docs: update README` → no version bump
+- `chore(deps): update dependencies` → no version bump
+
+See [`.cursor/rules/commits/RULE.md`](.cursor/rules/commits/RULE.md) for detailed commit guidelines.
+
+### Manual Release (if needed)
+
+If you need to trigger a release manually or test locally:
+
+```bash
+# Install release-plz
+cargo install --locked release-plz
+
+# Update versions and changelog (creates release PR locally)
+release-plz release-pr
+
+# Publish to crates.io (after merging release PR)
+release-plz release
+```
+
 ## Contributing
 
 Contributions are welcome! Please ensure:
@@ -175,7 +233,27 @@ Contributions are welcome! Please ensure:
 1. All tests pass: `make ci`
 2. Code is formatted: `make fmt`
 3. No clippy warnings: `make lint`
-4. Follow conventional commit messages
+4. **Follow [Conventional Commits](https://www.conventionalcommits.org/)** - This is required for automatic versioning and changelog generation
+
+### Commit Message Format
+
+Use the format: `type(scope): description`
+
+**Types:**
+- `feat`: New feature (causes minor version bump)
+- `fix`: Bug fix (causes patch version bump)
+- `refactor`: Code refactoring (no version bump unless breaking)
+- `test`: Adding or updating tests (no version bump)
+- `docs`: Documentation changes (no version bump)
+- `style`: Code style changes (no version bump)
+- `chore`: Maintenance tasks (no version bump)
+
+**Examples:**
+- `feat(cli): add shorthand flag for repo argument`
+- `fix(scan): resolve session matching bug`
+- `docs: update installation instructions`
+
+See [`.cursor/rules/commits/RULE.md`](.cursor/rules/commits/RULE.md) for detailed guidelines.
 
 ## License
 
