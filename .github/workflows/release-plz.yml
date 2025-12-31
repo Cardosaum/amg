@@ -18,7 +18,7 @@ jobs:
     name: Release-plz release
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    if: github.repository_owner == 'Cardosaum' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    if: startsWith(github.ref, 'refs/tags/amg-v') && github.repository_owner == 'Cardosaum'
     permissions:
       contents: write
     steps:
