@@ -32,7 +32,7 @@ Concise summary in imperative mood (e.g., "add feature" not "added feature" or "
 Each commit should represent one logical, self-contained change:
 
 - One feature, fix, or refactoring per commit
-- Each commit should compile and pass tests independently
+- Each commit must pass `make ci` independently (see @ci-checks-and-commits)
 - Separate refactoring from feature additions
 - Separate test additions from implementation changes
 - Separate documentation from code changes
