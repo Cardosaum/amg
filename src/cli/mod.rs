@@ -1,4 +1,4 @@
-mod cli;
+mod args;
 mod codex_cmd;
 mod constants;
 mod logging;
@@ -21,10 +21,10 @@ pub fn entry() -> ExitCode {
 }
 
 fn run() -> Result<ExitCode> {
-    let args = cli::parse_args();
+    let args = args::parse_args();
 
     match args.command {
-        cli::Commands::ResumeBranch {
+        args::Commands::ResumeBranch {
             branch,
             repo,
             codexdir,

@@ -3,7 +3,7 @@ name = "amg"
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.91"
-default-run = "codex_resume_branch"
+default-run = "amg"
 description = "Resume Codex sessions by git branch"
 authors = ["Cardosaum"]
 license = "MIT OR Apache-2.0"
@@ -18,8 +18,8 @@ tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.22", features = ["env-filter"] }
 
 [[bin]]
-name = "codex_resume_branch"
-path = "src/bin/codex_resume_branch.rs"
+name = "amg"
+path = "src/bin/amg.rs"
 
 [lints.rust]
 unused = "deny"
