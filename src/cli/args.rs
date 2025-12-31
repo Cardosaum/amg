@@ -7,8 +7,9 @@ use clap::{Parser, Subcommand};
 
 use super::prelude::*;
 
-/// Main command-line arguments structure.
+/// Manage and resume Codex sessions
 ///
+/// Main command-line arguments structure.
 /// Parses the top-level command and dispatches to subcommands.
 #[derive(Parser, Debug)]
 #[command(name = "amg")]

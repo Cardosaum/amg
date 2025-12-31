@@ -85,6 +85,5 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
-      - uses: rustsec/rustsec-action@master
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+      - run: cargo install cargo-audit --locked
+      - run: cargo audit
