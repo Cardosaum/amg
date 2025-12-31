@@ -11,22 +11,9 @@ on:
 env:
   CARGO_TERM_COLOR: always
 
-# Workflow-level permissions ensure that all jobs have the necessary permissions
-# even if repository settings restrict default GITHUB_TOKEN permissions.
-# Individual jobs can override these permissions if needed.
-permissions:
-  contents: write
-  pull-requests: write
-  id-token: write  # Required for trusted publishing (OIDC) to crates.io
-
-# Note: This workflow uses GitHub Secrets for token management.
-# For centralized secret management with Bitwarden CLI, you can optionally
-# integrate Bitwarden CLI by:
-# 1. Adding Bitwarden CLI installation step
-# 2. Authenticating with Bitwarden API key (stored as GitHub Secret)
-# 3. Retrieving tokens from Bitwarden vault
-# 4. Using retrieved tokens in release-plz steps
-# See docs/BITWARDEN_SETUP.md for details on Bitwarden CLI integration.
+# Security: Use job-level permissions (least privilege). See each job's
+# `permissions:` block. This workflow intentionally uses GitHub-native auth
+# (GITHUB_TOKEN + crates.io trusted publishing via OIDC).
 #
 # IMPORTANT: If this workflow fails with "GitHub Actions is not permitted to
 # create or approve pull requests" (403 error), verify repository settings:
@@ -42,23 +29,23 @@ jobs:
   release-plz-release:
     name: Release-plz release
     runs-on: ubuntu-latest
-    # Only run for the repository owner to prevent forks from running
-    if: github.repository_owner == 'Cardosaum'
+    # Only run for tags and the repository owner to prevent forks from running
+    if: startsWith(github.ref, 'refs/tags/amg-v') && github.repository_owner == 'Cardosaum'
     permissions:
       contents: write
       id-token: write  # Required for trusted publishing (OIDC)
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
         with:
           fetch-depth: 0
           persist-credentials: false
 
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@4be9e76fd7c4901c61fb841f559994984270fce7 # stable
 
       - name: Run release-plz
-        uses: release-plz/action@v0.5
+        uses: release-plz/action@487eb7b5c085a664d5c5ca05f4159bd9b591182a # v0.5
         with:
           command: release
         env:
@@ -84,16 +71,16 @@ jobs:
       cancel-in-progress: false
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
         with:
           fetch-depth: 0
           persist-credentials: false
 
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@4be9e76fd7c4901c61fb841f559994984270fce7 # stable
 
       - name: Run release-plz
-        uses: release-plz/action@v0.5
+        uses: release-plz/action@487eb7b5c085a664d5c5ca05f4159bd9b591182a # v0.5
         with:
           command: release-pr
         env:
@@ -135,16 +122,16 @@ jobs:
             archive-format: tar.gz
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
 
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@4be9e76fd7c4901c61fb841f559994984270fce7 # stable
 
       - name: Add target
         run: rustup target add ${{ matrix.target }}
 
       - name: Cache Rust dependencies
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5 # v2
         with:
           workspaces: "."
 
@@ -178,7 +165,7 @@ jobs:
           cd ..
 
       - name: Upload to GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2
         with:
           files: |
             amg-${{ steps.version.outputs.version }}-${{ matrix.target }}.${{ matrix.archive-format }}
